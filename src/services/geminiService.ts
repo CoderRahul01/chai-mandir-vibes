@@ -28,6 +28,9 @@ class GeminiService {
     Respond as the chaiwala:`;
 
     try {
+      console.log('🫖 Making Gemini API request for chaiwala...');
+      console.log('API Key (first 10 chars):', this.apiKey.substring(0, 10));
+      
       const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
@@ -42,27 +45,46 @@ class GeminiService {
         })
       });
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('❌ API Error Response:', errorData);
         
         // Handle specific API not enabled error
         if (response.status === 403 && errorData.error?.message?.includes('API has not been used')) {
+          console.log('🔧 API not enabled error detected');
           throw new Error('API_NOT_ENABLED');
         }
         
-        throw new Error(`API request failed: ${response.status}`);
+        if (response.status === 403) {
+          console.log('🔐 Permission denied error');
+          throw new Error('PERMISSION_DENIED');
+        }
+        
+        throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
-      return data.candidates[0]?.content?.parts[0]?.text || "Chai ready hai! ☕";
+      console.log('✅ Successful API response:', data);
+      
+      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      console.log('💬 Chaiwala response:', responseText);
+      
+      return responseText || "Chai ready hai! ☕";
     } catch (error) {
-      console.error('Gemini API error:', error);
+      console.error('🚨 Gemini API error:', error);
       
       if (error.message === 'API_NOT_ENABLED') {
-        return "🔧 Arre sahab! Gemini API enable karna padega pehle. Google Cloud Console mein jao aur 'Generative Language API' ko enable karo. Phir main bilkul ready hun chai banane ke liye! 🫖";
+        return "🔧 Arre sahab! Gemini API enable karna padega pehle. Google Cloud Console mein jao aur 'Generative Language API' ko enable karo. Phir main bilkul ready hun chai banane ke liye! 🫖\n\nDirect link: https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview";
       }
       
-      return "Arre yaar, thoda internet slow hai aaj. Phir se try karo! 🤷‍♂️ (Internet is slow today, try again!)";
+      if (error.message === 'PERMISSION_DENIED') {
+        return "🔑 Sahab, API key mein koi problem hai! Check karo ki sahi key hai aur permissions theek hain. 🤔";
+      }
+      
+      return `Arre yaar, kuch technical problem hai: ${error.message} 🤷‍♂️ Console check karo details ke liye!`;
     }
   }
 
