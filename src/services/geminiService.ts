@@ -43,13 +43,25 @@ class GeminiService {
       });
 
       if (!response.ok) {
-        throw new Error('API request failed');
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Handle specific API not enabled error
+        if (response.status === 403 && errorData.error?.message?.includes('API has not been used')) {
+          throw new Error('API_NOT_ENABLED');
+        }
+        
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const data = await response.json();
       return data.candidates[0]?.content?.parts[0]?.text || "Chai ready hai! ☕";
     } catch (error) {
       console.error('Gemini API error:', error);
+      
+      if (error.message === 'API_NOT_ENABLED') {
+        return "🔧 Arre sahab! Gemini API enable karna padega pehle. Google Cloud Console mein jao aur 'Generative Language API' ko enable karo. Phir main bilkul ready hun chai banane ke liye! 🫖";
+      }
+      
       return "Arre yaar, thoda internet slow hai aaj. Phir se try karo! 🤷‍♂️ (Internet is slow today, try again!)";
     }
   }
@@ -84,13 +96,25 @@ class GeminiService {
       });
 
       if (!response.ok) {
-        throw new Error('API request failed');
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Handle specific API not enabled error
+        if (response.status === 403 && errorData.error?.message?.includes('API has not been used')) {
+          throw new Error('API_NOT_ENABLED');
+        }
+        
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const data = await response.json();
       return data.candidates[0]?.content?.parts[0]?.text || "🕉️ Om Shanti Shanti Shanti. May peace be with you.";
     } catch (error) {
       console.error('Gemini API error:', error);
+      
+      if (error.message === 'API_NOT_ENABLED') {
+        return "🔧 Om Namah Shivaya. To receive divine blessings, please enable the Generative Language API in your Google Cloud Console first. Then I shall guide you with spiritual wisdom. 🕉️";
+      }
+      
       return "🕉️ The divine works in mysterious ways. Please try again with a peaceful heart.";
     }
   }
