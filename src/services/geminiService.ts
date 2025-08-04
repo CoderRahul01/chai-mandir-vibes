@@ -6,7 +6,7 @@ interface GeminiResponse {
 }
 
 class GeminiService {
-  private apiKey: string = '';
+  private apiKey: string = 'AIzaSyBahBgmEp6SYC1dM7qDHHw3WjCRXQeZnlw';
   private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
   setApiKey(apiKey: string) {
