@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ChatInterface } from './ChatInterface';
 import { Input } from "@/components/ui/input";
 import mandirBg from "@/assets/mandir-bg.jpg";
 
@@ -18,37 +19,45 @@ interface MandirProps {
   isLoading: boolean;
 }
 
+interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 export const Mandir = ({ onChatWithAI, aiResponse, isLoading }: MandirProps) => {
-  const [selectedPrayer, setSelectedPrayer] = useState<string>('');
-  const [customPrayer, setCustomPrayer] = useState('');
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [bellRung, setBellRung] = useState(false);
 
   const handleRingBell = () => {
     setBellRung(true);
     setTimeout(() => setBellRung(false), 1000);
     
-    // Play bell sound effect
     if ((window as any).playBellSound) {
       (window as any).playBellSound();
     }
     
     const bellMessage = "I just rang the temple bell. Please bless me with your divine words.";
+    setChatHistory(prev => [...prev, { sender: 'user', text: bellMessage }]);
     onChatWithAI(bellMessage);
   };
 
   const handleOfferPrayer = (prayer: string) => {
-    setSelectedPrayer(prayer);
     const prayerMessage = `I offer this prayer: "${prayer}". Please give me a blessing or spiritual guidance.`;
+    setChatHistory(prev => [...prev, { sender: 'user', text: prayerMessage }]);
     onChatWithAI(prayerMessage);
   };
 
-  const handleCustomPrayer = () => {
-    if (customPrayer.trim()) {
-      const prayerMessage = `I offer this personal prayer: "${customPrayer}". Please give me a blessing or spiritual guidance.`;
-      onChatWithAI(prayerMessage);
-      setCustomPrayer('');
-    }
+  const handleCustomPrayer = (message: string) => {
+    const prayerMessage = `I offer this personal prayer: "${message}". Please give me a blessing or spiritual guidance.`;
+    setChatHistory(prev => [...prev, { sender: 'user', text: prayerMessage }]);
+    onChatWithAI(prayerMessage);
   };
+
+  useEffect(() => {
+    if (aiResponse) {
+      setChatHistory(prev => [...prev, { sender: 'ai', text: aiResponse }]);
+    }
+  }, [aiResponse]);
 
   return (
     <div 
@@ -118,15 +127,24 @@ export const Mandir = ({ onChatWithAI, aiResponse, isLoading }: MandirProps) => 
                 <div className="flex gap-2">
                   <Input
                     placeholder="Share your personal prayer..."
-                    value={customPrayer}
-                    onChange={(e) => setCustomPrayer(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleCustomPrayer()}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                        handleCustomPrayer(e.currentTarget.value);
+                        e.currentTarget.value = '';
+                      }
+                    }}
                     className="flex-1"
                   />
                   <Button 
                     variant="golden" 
-                    onClick={handleCustomPrayer}
-                    disabled={!customPrayer.trim() || isLoading}
+                    onClick={(e) => {
+                      const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                      if (input.value.trim()) {
+                        handleCustomPrayer(input.value);
+                        input.value = '';
+                      }
+                    }}
+                    disabled={isLoading}
                   >
                     Offer
                   </Button>
@@ -136,50 +154,15 @@ export const Mandir = ({ onChatWithAI, aiResponse, isLoading }: MandirProps) => 
 
             {/* Divine Blessings */}
             <Card className="p-6 bg-card/90 backdrop-blur-sm">
-              <h3 className="text-2xl font-bold mb-4 text-temple-red">Divine Blessings</h3>
-              
-              {/* Blessings Display */}
-              <div className="bg-muted/30 rounded-lg p-4 h-64 overflow-y-auto">
-                {selectedPrayer && (
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground">Your prayer: {selectedPrayer}</p>
-                  </div>
-                )}
-                
-                {aiResponse && (
-                  <div className="bg-mandir-gold/10 rounded-lg p-4 mb-2">
-                    <p className="font-medium text-sm text-mandir-gold mb-2">🕉️ Divine Blessing:</p>
-                    <p className="text-sm leading-relaxed">{aiResponse}</p>
-                  </div>
-                )}
-                
-                {isLoading && (
-                  <div className="bg-mandir-gold/10 rounded-lg p-4 mb-2">
-                    <p className="font-medium text-sm text-mandir-gold mb-2">🕉️ Divine Blessing:</p>
-                    <p className="text-sm animate-pulse">The divine is speaking...</p>
-                  </div>
-                )}
-                
-                {!aiResponse && !isLoading && (
-                  <div className="text-center py-8">
-                    <span className="text-4xl mb-4 block">🕉️</span>
-                    <p className="text-muted-foreground">
-                      Ring the bell or offer a prayer to receive divine blessings
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Sacred Symbols */}
-              <div className="mt-4 text-center">
-                <div className="flex justify-center space-x-4 text-2xl opacity-60">
-                  <span>🕉️</span>
-                  <span>🪔</span>
-                  <span>🌺</span>
-                  <span>🙏</span>
-                  <span>🌸</span>
-                </div>
-              </div>
+              <ChatInterface
+                title="Divine Blessings"
+                placeholder="Offer a prayer..."
+                onSendMessage={handleCustomPrayer}
+                aiResponse={aiResponse}
+                isLoading={isLoading}
+                messageHistory={chatHistory}
+                icon={<span className="text-3xl opacity-80">🕉️</span>}
+              />
             </Card>
           </div>
         </div>

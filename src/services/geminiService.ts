@@ -6,11 +6,24 @@ interface GeminiResponse {
 }
 
 class GeminiService {
-  // The API key is intentionally left as an empty string.
-  // The Canvas environment will automatically provide the API key at runtime.
-  private apiKey: string = 'AIzaSyBqbmtsRH9So4UWPEVBWV2CJsAYqmYvlxI';
-  // Using the specified Gemini model for text generation.
-  private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent';
+  private apiKey: string | null = null;
+  private baseUrl: string = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-preview-0520:generateContent';
+
+  /**
+   * Sets the API key for the Gemini service.
+   * @param key The API key.
+   */
+  setApiKey(key: string) {
+    this.apiKey = key;
+  }
+
+  /**
+   * Checks if the API key is set.
+   * @returns True if the API key is set, false otherwise.
+   */
+  isApiKeySet(): boolean {
+    return !!this.apiKey;
+  }
 
   /**
    * Helper function to make API calls with exponential backoff.

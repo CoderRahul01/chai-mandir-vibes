@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { ChatInterface } from './ChatInterface';
 import chaiStallBg from "@/assets/chai-stall-bg.jpg";
 
 const chaiOptions = [
@@ -17,27 +17,34 @@ interface ChaiStallProps {
   isLoading: boolean;
 }
 
+interface ChatMessage {
+  sender: 'user' | 'ai';
+  text: string;
+}
+
 export const ChaiStall = ({ onChatWithAI, aiResponse, isLoading }: ChaiStallProps) => {
-  const [selectedChai, setSelectedChai] = useState<string>('');
-  const [userMessage, setUserMessage] = useState('');
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   const handleOrderChai = (chaiName: string) => {
-    setSelectedChai(chaiName);
     const orderMessage = `I'd like to order ${chaiName}. Tell me about it in your typical chaiwala style!`;
+    setChatHistory(prev => [...prev, { sender: 'user', text: orderMessage }]);
     onChatWithAI(orderMessage);
     
-    // Play chai sound effect
     if ((window as any).playChaiSound) {
       (window as any).playChaiSound();
     }
   };
 
-  const handleSendMessage = () => {
-    if (userMessage.trim()) {
-      onChatWithAI(userMessage);
-      setUserMessage('');
-    }
+  const handleSendMessage = (message: string) => {
+    setChatHistory(prev => [...prev, { sender: 'user', text: message }]);
+    onChatWithAI(message);
   };
+
+  useEffect(() => {
+    if (aiResponse) {
+      setChatHistory(prev => [...prev, { sender: 'ai', text: aiResponse }]);
+    }
+  }, [aiResponse]);
 
   return (
     <div 
@@ -85,54 +92,15 @@ export const ChaiStall = ({ onChatWithAI, aiResponse, isLoading }: ChaiStallProp
 
             {/* Chat with Chaiwala */}
             <Card className="p-6 bg-card/90 backdrop-blur-sm">
-              <h3 className="text-2xl font-bold mb-4 text-chai-brown">Chat with Chaiwala</h3>
-              
-              {/* Chat Display */}
-              <div className="bg-muted/30 rounded-lg p-4 mb-4 h-64 overflow-y-auto">
-                {selectedChai && (
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground">You ordered: {selectedChai}</p>
-                  </div>
-                )}
-                
-                {aiResponse && (
-                  <div className="bg-primary/10 rounded-lg p-3 mb-2">
-                    <p className="font-medium text-sm text-primary mb-1">Chaiwala:</p>
-                    <p className="text-sm">{aiResponse}</p>
-                  </div>
-                )}
-                
-                {isLoading && (
-                  <div className="bg-primary/10 rounded-lg p-3 mb-2">
-                    <p className="font-medium text-sm text-primary mb-1">Chaiwala:</p>
-                    <p className="text-sm animate-pulse">Thinking...</p>
-                  </div>
-                )}
-                
-                {!aiResponse && !isLoading && (
-                  <p className="text-muted-foreground text-center py-8">
-                    Order a chai or start a conversation!
-                  </p>
-                )}
-              </div>
-
-              {/* Message Input */}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Chat with the chaiwala..."
-                  value={userMessage}
-                  onChange={(e) => setUserMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  className="flex-1"
-                />
-                <Button 
-                  variant="saffron" 
-                  onClick={handleSendMessage}
-                  disabled={!userMessage.trim() || isLoading}
-                >
-                  Send
-                </Button>
-              </div>
+              <ChatInterface
+                title="Chat with Chaiwala"
+                placeholder="Ask the chaiwala anything..."
+                onSendMessage={handleSendMessage}
+                aiResponse={aiResponse}
+                isLoading={isLoading}
+                messageHistory={chatHistory}
+                icon={<span className="text-2xl">🫖</span>}
+              />
             </Card>
           </div>
         </div>
